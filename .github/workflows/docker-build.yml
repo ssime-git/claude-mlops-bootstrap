@@ -1,0 +1,20 @@
+name: Docker Build
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t fraud-detection:${{ github.sha }} .
+
+      - name: Test image starts
+        run: |
+          docker run -d --name test-api -p 8000:8000 fraud-detection:${{ github.sha }}
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+          docker stop test-api

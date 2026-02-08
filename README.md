@@ -1,69 +1,68 @@
-# Branch 08: Model Registry
+# Branch 09: CI Pipeline
 
-> **Goal**: Set up MLflow Model Registry with staging/production stages and a rollback strategy.
+> **Goal**: Set up GitHub Actions for automated testing, linting, and Docker image builds.
 
 ## What You'll Learn
 
-- Registering models in **MLflow Model Registry**
-- Promoting models through stages (Staging → Production)
-- Implementing a **rollback strategy** (revert to previous version)
-- CLI tooling for model lifecycle management
+- Configuring **GitHub Actions** for CI on pull requests
+- Automated quality gates: ruff, mypy, pytest
+- Docker image build and smoke test on merge to main
 
-## What Changed (vs branch 07)
+## What Changed (vs branch 08)
 
-- Added `src/fraud_detection/registry.py` — register, promote, rollback, load
-- Added `scripts/promote_model.py` — CLI for model promotion
+- Added `.github/workflows/ci.yml` — lint + test on PR
+- Added `.github/workflows/docker-build.yml` — build + smoke test on merge
 
 ## Step-by-Step
 
-### 1. Register the best model
+### 1. Review the workflows
 
 ```bash
-uv run python scripts/promote_model.py --stage staging
+cat .github/workflows/ci.yml
+cat .github/workflows/docker-build.yml
 ```
 
-### 2. Test the staging model
+### 2. Test CI locally (simulate what GitHub Actions does)
 
 ```bash
-# Verify the model works in staging
-curl http://localhost:8000/health
+uvx ruff check src/
+uvx ruff format --check src/
+uvx mypy --strict src/
+uv run pytest tests/ -v --tb=short
 ```
 
-### 3. Promote to production
+### 3. Test Docker build locally
 
 ```bash
-uv run python scripts/promote_model.py --stage production
+docker build -t fraud-detection:test .
+docker run -d --name test-api -p 8000:8000 fraud-detection:test
+sleep 5
+curl -f http://localhost:8000/health
+docker stop test-api && docker rm test-api
 ```
 
-### 4. Simulate a rollback
+### 4. Push and verify
 
 ```bash
-# If something goes wrong:
-uv run python scripts/promote_model.py --rollback
+# Create a PR to trigger CI
+git push origin 09-ci-pipeline
+# Open PR on GitHub → watch CI run
 ```
-
-### 5. Verify in MLflow UI
-
-Open http://localhost:5000 → Models tab:
-- See registered model "FraudDetector"
-- See version history with stage transitions
-- Verify rollback moved previous version to Production
 
 ## Expected Behavior
 
-- Model is registered in MLflow Registry
-- Promotion from Staging → Production works
-- Rollback demotes current version to Archived, promotes N-1 to Production
-- API automatically picks up the new production model
-- All transitions are logged with structlog
+- `ci.yml` runs on every pull request: ruff check, ruff format, mypy, pytest
+- `docker-build.yml` runs on push to main: builds image, starts container, hits /health
+- All checks pass on the current codebase
+- Failed checks block PR merge
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/fraud_detection/registry.py` | Register, promote, rollback, load |
-| `scripts/promote_model.py` | CLI for model lifecycle |
+| `.github/workflows/ci.yml` | Lint + test on PR |
+| `.github/workflows/docker-build.yml` | Build + smoke test on merge |
 
 ## Next Branch
 
-→ `git checkout 09-ci-pipeline`
+→ `git checkout 10-gsd-feature`
