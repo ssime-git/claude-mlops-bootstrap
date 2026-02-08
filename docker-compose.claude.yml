@@ -1,11 +1,16 @@
+# Alternative: Run Claude Code in a container with MinIO + MLflow
+# Usage: docker compose -f docker-compose.claude.yml run --rm claude
 services:
-  devcontainer:
+  claude:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.claude
     volumes:
-      - ..:/workspace:cached
-    command: sleep infinity
+      - .:/workspace:cached
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    stdin_open: true
+    tty: true
     depends_on:
       - minio
       - mlflow
