@@ -1,83 +1,86 @@
-# Branch 10: GSD Feature
+# Branch 11: Ralph Pipeline Check
 
-> **Goal**: Use GSD (Get-Shit-Done) to add a complete geo-anomaly detection feature with fresh-context agents.
+> **Goal**: Use Ralph for autonomous pipeline health check, remediation, and model retraining.
 
 ## What You'll Learn
 
-- Using **GSD** for structured feature development
-- Fresh-context agent spawning (no context rot)
-- Comparing GSD vs manual development (time, quality, commits)
+- Setting up **Ralph** (frankbria version) for autonomous tasks
+- Writing task definitions that require **judgment** (not just scripting)
+- Running overnight health checks with fresh context per iteration
+- Autonomous model retraining with comparison logic
 
-## What Changed (vs branch 09)
+## What Changed (vs branch 10)
 
-- Added `.planning/` directory (GSD creates its plan here)
-- Added `docs/gsd-metrics.md` — metrics tracking template
+- Added `scripts/ralph/pipeline_health_check.md` — health check task
+- Added `scripts/ralph/retrain_model.md` — retraining task
+- Added `scripts/ralph/setup.sh` — Ralph installation
+- Added `docs/reports/` — health report output directory
+
+## Why Ralph (not a script)?
+
+The health check task is **open-ended and requires judgment**:
+- If data validation fails → investigate *which* rules broke and *why*
+- If API is slow → profile and suggest optimization
+- If DVC is stale → decide which stages to re-run
+
+A script would just report pass/fail. Ralph investigates and remediates.
 
 ## Step-by-Step
 
-### 1. Start GSD
+### 1. Install Ralph
 
 ```bash
-claude
-/gsd:new-project
+bash scripts/ralph/setup.sh
 ```
 
-### 2. Answer the GSD interview
-
-```
-> What: Add geographic anomaly detection
-> Requirements:
->   - Geohashing for location clustering
->   - Flag unusual locations per user
->   - Integrate with MLflow tracking
->   - <100ms latency
-```
-
-GSD will create a plan in `.planning/` with tasks.
-
-### 3. Execute the plan
+### 2. Run the health check (overnight)
 
 ```bash
-/gsd:execute-plan
+ralph-setup --task scripts/ralph/pipeline_health_check.md
+ralph --monitor --max-iterations 50
 ```
 
-GSD spawns fresh-context agents for each task:
-- **Task 1**: GeoHasher utility class
-- **Task 2**: GeoAnomalyDetector model
-- **Task 3**: Integration with feature pipeline
-- **Task 4**: MLflow experiment logging
-- **Task 5**: Tests (target coverage > 80%)
-
-### 4. Measure metrics
-
-Fill in `docs/gsd-metrics.md` with:
-- Time: GSD vs how long it would take manually
-- Quality: test coverage, lint errors, type errors
-- Commits: atomic (GSD) vs chaotic (manual)
-
-### 5. Review the generated code
+### 3. Check the report in the morning
 
 ```bash
-# Check what GSD created
-git diff --stat HEAD
-uv run pytest tests/ -v
+cat docs/reports/health_*.md
+```
+
+### 4. Run retraining (if recommended by health check)
+
+```bash
+ralph-setup --task scripts/ralph/retrain_model.md
+ralph --monitor --max-iterations 50
+```
+
+### 5. Verify results
+
+```bash
+# Check MLflow for new model versions
+open http://localhost:5000
+# Check if new model was promoted to staging
+uv run python scripts/promote_model.py --stage staging
 ```
 
 ## Expected Behavior
 
-- GSD creates a structured plan in `.planning/`
-- Each task is executed by a fresh-context agent (no context rot)
-- Generated code passes all quality gates (ruff, mypy, pytest)
-- Commits are atomic and well-described
-- New geo-anomaly feature integrates with existing pipeline
+- Health check runs all 5 verification steps autonomously
+- Issues are **investigated**, not just reported (e.g., "column X has 3% nulls because...")
+- Remediation is attempted when possible (reprocess data, restart service)
+- Health report is generated in `docs/reports/health_{date}.md`
+- Retraining compares new model F1 with current production
+- New model registered only if it's better
+- Fresh context per iteration (no context rot)
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `.planning/` | GSD planning directory (auto-generated) |
-| `docs/gsd-metrics.md` | Metrics comparison template |
+| `scripts/ralph/pipeline_health_check.md` | Health check + remediation task |
+| `scripts/ralph/retrain_model.md` | Retraining task |
+| `scripts/ralph/setup.sh` | Ralph installation script |
+| `docs/reports/` | Health report output directory |
 
 ## Next Branch
 
-→ `git checkout 11-ralph-pipeline-check`
+→ `git checkout 12-monitoring`
