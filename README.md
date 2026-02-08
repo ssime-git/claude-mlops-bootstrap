@@ -1,89 +1,78 @@
-# Branch 03: Data Pipeline
+# Branch 04: Model Training
 
-> **Goal**: Set up MinIO + DVC for data versioning, Great Expectations for validation, and build the data loading/processing pipeline.
+> **Goal**: Create training scripts with XGBoost and full MLflow experiment tracking.
 
 ## What You'll Learn
 
-- Configuring **DVC** with MinIO as S3-compatible remote storage
-- Creating a **Great Expectations** validation suite
-- Building data loading, validation, and processing modules
-- Using Claude Code with the **dvc-versioning** and **great-expectations** skills
+- Training an XGBoost model for fraud detection
+- Logging params, metrics, and model artifacts to **MLflow**
+- Config-driven hyperparameters via `config/models.yaml`
+- Using Claude Code with the **mlflow-tracking** skill
 
-## What Changed (vs branch 02)
+## What Changed (vs branch 03)
 
-- Added `data/raw/` and `data/processed/` directories
-- Added `src/fraud_detection/data/` (loader, validator, processor)
-- Added `great_expectations/expectations/fraud_suite.json`
-- Added `scripts/setup_minio.sh`
+- Added `src/fraud_detection/models/` (train, evaluate)
+- Added `config/models.yaml` — hyperparameters
+- Added `tests/models/test_train.py`
 
 ## Step-by-Step
 
-### 1. Setup MinIO buckets
+### 1. Review the config
 
 ```bash
-bash scripts/setup_minio.sh
-# Creates: dvc-storage, mlflow buckets
+cat config/models.yaml
 ```
 
-### 2. Download a dataset
-
-```bash
-# Use the dataset identified in branch 01 research
-curl -o data/raw/transactions.csv [URL_FROM_DOCS_RESEARCH_DATASETS]
-```
-
-### 3. Initialize DVC with MinIO
-
-```bash
-dvc init
-dvc remote add -d minio s3://dvc-storage
-dvc remote modify minio endpointurl http://localhost:9000
-dvc remote modify minio access_key_id minioadmin
-dvc remote modify minio secret_access_key minioadmin
-```
-
-### 4. Track raw data
-
-```bash
-dvc add data/raw/transactions.csv
-git add data/raw/transactions.csv.dvc .dvc/
-```
-
-### 5. Use Claude to enhance the pipeline
+### 2. Create training script with Claude
 
 ```bash
 claude
 
-> Using the great-expectations skill, enhance src/fraud_detection/data/validator.py
-> to use the fraud_suite.json expectation suite.
-> Then run the full pipeline: load → validate → process
+> Using the mlflow-tracking skill (check docs/research/mlflow-latest.md),
+> review src/fraud_detection/models/train.py:
+> - Load data from data/processed/
+> - Train XGBoost with params from config/models.yaml
+> - Log params, metrics, model to MLflow
+> - Use MinIO as artifact store
 ```
 
-### 6. Run the pipeline
+### 3. Train the model
 
 ```bash
-uv run python -m fraud_detection.data.processor
-dvc add data/processed/transactions_clean.parquet
+uv run python -m fraud_detection.models.train
+```
+
+### 4. Check MLflow UI
+
+Open http://localhost:5000 — you should see:
+- An experiment named `fraud-detection`
+- A run with logged params (learning_rate, max_depth, n_estimators)
+- Metrics: f1, precision, recall
+- Model artifact stored in MinIO
+
+### 5. Run tests
+
+```bash
+uv run pytest tests/models/ -v
 ```
 
 ## Expected Behavior
 
-- MinIO buckets `dvc-storage` and `mlflow` are created
-- DVC is initialized with MinIO as remote
-- Raw data is tracked by DVC (`.dvc` file created)
-- Great Expectations suite validates: amount > 0, amount < 1M, no null merchant_id
-- Processed parquet file is generated in `data/processed/`
+- Training script runs without errors
+- MLflow experiment and run are visible in the UI
+- Params, metrics, and model artifact are logged
+- F1 score > 0.80 on test set
+- Config changes in `models.yaml` are reflected in MLflow params
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `scripts/setup_minio.sh` | Create MinIO buckets |
-| `src/fraud_detection/data/loader.py` | Load CSV data |
-| `src/fraud_detection/data/validator.py` | Validate with GE rules |
-| `src/fraud_detection/data/processor.py` | Clean and process data |
-| `great_expectations/expectations/fraud_suite.json` | Validation rules |
+| `src/fraud_detection/models/train.py` | XGBoost training + MLflow logging |
+| `src/fraud_detection/models/evaluate.py` | Metrics computation |
+| `config/models.yaml` | Hyperparameters |
+| `tests/models/test_train.py` | Training tests |
 
 ## Next Branch
 
-→ `git checkout 04-model-training`
+→ `git checkout 05-api-serving`
