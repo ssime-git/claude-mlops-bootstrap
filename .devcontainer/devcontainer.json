@@ -3,6 +3,9 @@
   "dockerComposeFile": "docker-compose.dev.yml",
   "service": "devcontainer",
   "workspaceFolder": "/workspace",
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "updateRemoteUserUID": true,
 
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
