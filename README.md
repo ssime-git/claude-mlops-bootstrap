@@ -1,78 +1,86 @@
-# Branch 04: Model Training
+# Branch 05: API Serving
 
-> **Goal**: Create training scripts with XGBoost and full MLflow experiment tracking.
+> **Goal**: Build a FastAPI inference API with model caching on startup and Pydantic v2 validation.
 
 ## What You'll Learn
 
-- Training an XGBoost model for fraud detection
-- Logging params, metrics, and model artifacts to **MLflow**
-- Config-driven hyperparameters via `config/models.yaml`
-- Using Claude Code with the **mlflow-tracking** skill
+- Building a **FastAPI** prediction API
+- **Pydantic v2** request/response schemas
+- Model caching on startup via **lifespan** context manager
+- Using Claude Code with the **fastapi-serving** skill
 
-## What Changed (vs branch 03)
+## What Changed (vs branch 04)
 
-- Added `src/fraud_detection/models/` (train, evaluate)
-- Added `config/models.yaml` — hyperparameters
-- Added `tests/models/test_train.py`
+- Added `src/fraud_detection/serving/` (api, schemas, inference)
+- Added `config/serving.yaml` — API configuration
+- Added `tests/serving/test_api.py`
 
 ## Step-by-Step
 
-### 1. Review the config
+### 1. Review the API code
 
 ```bash
-cat config/models.yaml
+cat src/fraud_detection/serving/api.py
+cat src/fraud_detection/serving/schemas.py
 ```
 
-### 2. Create training script with Claude
+### 2. Start the API in dev mode
+
+```bash
+uv run uvicorn fraud_detection.serving.api:app --reload
+```
+
+### 3. Test the health endpoint
+
+```bash
+curl http://localhost:8000/health
+# Expected: {"status": "healthy", "model_loaded": true}
+```
+
+### 4. Test a prediction
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 150.50, "merchant_id": "m_123", "timestamp": "2026-02-08T10:30:00Z"}'
+
+# Expected: {"is_fraud": false, "confidence": 0.12, "model_version": "Production"}
+```
+
+### 5. Use Claude to enhance
 
 ```bash
 claude
 
-> Using the mlflow-tracking skill (check docs/research/mlflow-latest.md),
-> review src/fraud_detection/models/train.py:
-> - Load data from data/processed/
-> - Train XGBoost with params from config/models.yaml
-> - Log params, metrics, model to MLflow
-> - Use MinIO as artifact store
+> Using the fastapi-serving skill, review the API and suggest improvements
+> for production readiness (error handling, logging, etc.)
 ```
 
-### 3. Train the model
+### 6. Run tests
 
 ```bash
-uv run python -m fraud_detection.models.train
-```
-
-### 4. Check MLflow UI
-
-Open http://localhost:5000 — you should see:
-- An experiment named `fraud-detection`
-- A run with logged params (learning_rate, max_depth, n_estimators)
-- Metrics: f1, precision, recall
-- Model artifact stored in MinIO
-
-### 5. Run tests
-
-```bash
-uv run pytest tests/models/ -v
+uv run pytest tests/serving/ -v
 ```
 
 ## Expected Behavior
 
-- Training script runs without errors
-- MLflow experiment and run are visible in the UI
-- Params, metrics, and model artifact are logged
-- F1 score > 0.80 on test set
-- Config changes in `models.yaml` are reflected in MLflow params
+- API starts and loads model from MLflow on startup
+- `GET /health` returns 200 with model status
+- `POST /predict` returns fraud prediction with confidence score
+- Invalid input (negative amount, missing fields) returns 422 validation error
+- If model is not loaded, `/predict` returns 503
+- Response time < 100ms per prediction
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/fraud_detection/models/train.py` | XGBoost training + MLflow logging |
-| `src/fraud_detection/models/evaluate.py` | Metrics computation |
-| `config/models.yaml` | Hyperparameters |
-| `tests/models/test_train.py` | Training tests |
+| `src/fraud_detection/serving/api.py` | FastAPI app with lifespan |
+| `src/fraud_detection/serving/schemas.py` | Pydantic v2 request/response models |
+| `src/fraud_detection/serving/inference.py` | Model loading + prediction logic |
+| `config/serving.yaml` | API config (host, port, workers) |
+| `tests/serving/test_api.py` | API endpoint tests |
 
 ## Next Branch
 
-→ `git checkout 05-api-serving`
+→ `git checkout 06-dockerize-all`
