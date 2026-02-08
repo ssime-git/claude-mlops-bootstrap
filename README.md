@@ -26,8 +26,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install Claude Code
 npm install -g @anthropic-ai/claude-code
 
-# Install GSD
-npm install -g get-shit-done-cc
+# Install GSD (integrates with Claude Code)
+npx get-shit-done-cc --claude --global
 ```
 
 ### 2. Set up the project
@@ -62,7 +62,6 @@ claude login
 
 ```bash
 claude --version     # Claude Code 2.x
-gsd --version        # get-shit-done-cc
 uv --version         # uv 0.x
 python --version     # Python 3.11.x
 ```
@@ -106,7 +105,7 @@ This uses the official Anthropic Claude Code image (`Dockerfile.claude`).
 ## Expected Behavior
 
 - Claude Code is installed and authenticated (`claude login`)
-- GSD is available globally
+- GSD is installed in `~/.claude/` and available via `/gsd:help` in Claude Code
 - MinIO console accessible at http://localhost:9003
 - MLflow UI accessible at http://localhost:5001
 - Python 3.11 + uv are functional
