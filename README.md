@@ -47,8 +47,8 @@ python --version     # Python 3.11.x
 ### 4. Verify services
 
 ```bash
-curl http://localhost:9001  # MinIO console
-curl http://localhost:5000  # MLflow UI
+curl http://localhost:9003  # MinIO console
+curl http://localhost:5001  # MLflow UI
 ```
 
 ### 5. Test Claude Code
@@ -72,8 +72,8 @@ claude
 - devcontainer starts without errors
 - Claude Code is installed and authenticated (`claude login`)
 - GSD is available globally
-- MinIO console accessible on http://localhost:9001
-- MLflow UI accessible on http://localhost:5000
+- MinIO console accessible on http://localhost:9003
+- MLflow UI accessible on http://localhost:5001
 - Python 3.11 + uv are functional
 - `claude --permission-mode plan` opens Claude in plan mode
 
