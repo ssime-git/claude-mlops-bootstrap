@@ -1,101 +1,89 @@
-# Branch 02: Claude Code Configuration
+# Branch 03: Data Pipeline
 
-> **Goal**: Configure Claude Code with CLAUDE.md, automated hooks, MLOps skills, and a custom slash command.
+> **Goal**: Set up MinIO + DVC for data versioning, Great Expectations for validation, and build the data loading/processing pipeline.
 
 ## What You'll Learn
 
-- Writing a **CLAUDE.md** project constitution
-- Configuring **hooks** for automatic quality gates (ruff, mypy) on every file write
-- Creating domain-specific **skills** (MLflow, DVC, FastAPI, Great Expectations)
-- Adding a **custom slash command** (`/quality-check`)
-- Setting up **pre-commit** hooks
+- Configuring **DVC** with MinIO as S3-compatible remote storage
+- Creating a **Great Expectations** validation suite
+- Building data loading, validation, and processing modules
+- Using Claude Code with the **dvc-versioning** and **great-expectations** skills
 
-## What Changed (vs branch 01)
+## What Changed (vs branch 02)
 
-- Added `CLAUDE.md` — project constitution
-- Added `.claude/settings.json` — hooks configuration
-- Added 4 MLOps skills in `.claude/skills/`
-- Added `.claude/commands/quality-check.md` — slash command
-- Added `.pre-commit-config.yaml`
+- Added `data/raw/` and `data/processed/` directories
+- Added `src/fraud_detection/data/` (loader, validator, processor)
+- Added `great_expectations/expectations/fraud_suite.json`
+- Added `scripts/setup_minio.sh`
 
 ## Step-by-Step
 
-### 1. Install dev dependencies
+### 1. Setup MinIO buckets
 
 ```bash
-uv add --dev ruff mypy pytest pytest-cov pre-commit
+bash scripts/setup_minio.sh
+# Creates: dvc-storage, mlflow buckets
 ```
 
-### 2. Read the CLAUDE.md
+### 2. Download a dataset
 
 ```bash
-cat CLAUDE.md
+# Use the dataset identified in branch 01 research
+curl -o data/raw/transactions.csv [URL_FROM_DOCS_RESEARCH_DATASETS]
 ```
 
-This is the "constitution" that guides Claude's behavior for this project.
+### 3. Initialize DVC with MinIO
 
-### 3. Test the hooks
+```bash
+dvc init
+dvc remote add -d minio s3://dvc-storage
+dvc remote modify minio endpointurl http://localhost:9000
+dvc remote modify minio access_key_id minioadmin
+dvc remote modify minio secret_access_key minioadmin
+```
+
+### 4. Track raw data
+
+```bash
+dvc add data/raw/transactions.csv
+git add data/raw/transactions.csv.dvc .dvc/
+```
+
+### 5. Use Claude to enhance the pipeline
 
 ```bash
 claude
 
-# Ask Claude to create a simple file:
-> Create a simple validator: src/fraud_detection/validators.py
-> Function: validate_amount(amount: float) -> bool
-> Returns True if 0 < amount < 1000000
+> Using the great-expectations skill, enhance src/fraud_detection/data/validator.py
+> to use the fraud_suite.json expectation suite.
+> Then run the full pipeline: load → validate → process
 ```
 
-**Watch the hooks fire automatically:**
-- ✅ Ruff check (linting)
-- ✅ Ruff format (code style)
-- ✅ MyPy strict (type checking)
-
-### 4. Test a skill
+### 6. Run the pipeline
 
 ```bash
-claude
-
-> Using the mlflow-tracking skill (check docs/research/mlflow-latest.md first),
-> create src/fraud_detection/tracking.py with a setup_experiment() function
-```
-
-Claude should automatically reference the skill pattern and research docs.
-
-### 5. Test the slash command
-
-```bash
-claude
-
-/quality-check
-```
-
-### 6. Test pre-commit
-
-```bash
-uv run pre-commit run --all-files
+uv run python -m fraud_detection.data.processor
+dvc add data/processed/transactions_clean.parquet
 ```
 
 ## Expected Behavior
 
-- When Claude writes any `.py` file, hooks run automatically (ruff + mypy)
-- Generated code has type hints, Google-style docstrings, proper imports
-- Skills are picked up automatically when relevant topics are mentioned
-- `/quality-check` runs all quality gates and reports results
-- Pre-commit hooks catch issues before committing
+- MinIO buckets `dvc-storage` and `mlflow` are created
+- DVC is initialized with MinIO as remote
+- Raw data is tracked by DVC (`.dvc` file created)
+- Great Expectations suite validates: amount > 0, amount < 1M, no null merchant_id
+- Processed parquet file is generated in `data/processed/`
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `CLAUDE.md` | Project constitution for Claude Code |
-| `.claude/settings.json` | Hooks configuration (PostToolUse) |
-| `.claude/skills/mlflow-tracking/SKILL.md` | MLflow tracking patterns |
-| `.claude/skills/dvc-versioning/SKILL.md` | DVC versioning patterns |
-| `.claude/skills/fastapi-serving/SKILL.md` | FastAPI serving patterns |
-| `.claude/skills/great-expectations/SKILL.md` | Data validation patterns |
-| `.claude/commands/quality-check.md` | `/quality-check` slash command |
-| `.pre-commit-config.yaml` | Pre-commit hooks config |
+| `scripts/setup_minio.sh` | Create MinIO buckets |
+| `src/fraud_detection/data/loader.py` | Load CSV data |
+| `src/fraud_detection/data/validator.py` | Validate with GE rules |
+| `src/fraud_detection/data/processor.py` | Clean and process data |
+| `great_expectations/expectations/fraud_suite.json` | Validation rules |
 
 ## Next Branch
 
-→ `git checkout 03-data-pipeline`
+→ `git checkout 04-model-training`
