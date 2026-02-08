@@ -1,86 +1,97 @@
-# Branch 11: Ralph Pipeline Check
+# Branch 12: Monitoring
 
-> **Goal**: Use Ralph for autonomous pipeline health check, remediation, and model retraining.
+> **Goal**: Add Prometheus monitoring to the API and run a load test to verify scalability.
 
 ## What You'll Learn
 
-- Setting up **Ralph** (frankbria version) for autonomous tasks
-- Writing task definitions that require **judgment** (not just scripting)
-- Running overnight health checks with fresh context per iteration
-- Autonomous model retraining with comparison logic
+- Instrumenting a FastAPI app with **Prometheus** metrics
+- Setting up a Prometheus scraping config
+- Running a **load test** with Locust to verify p95 latency
+- Docker Compose with monitoring stack
 
-## What Changed (vs branch 10)
+## What Changed (vs branch 11)
 
-- Added `scripts/ralph/pipeline_health_check.md` — health check task
-- Added `scripts/ralph/retrain_model.md` — retraining task
-- Added `scripts/ralph/setup.sh` — Ralph installation
-- Added `docs/reports/` — health report output directory
-
-## Why Ralph (not a script)?
-
-The health check task is **open-ended and requires judgment**:
-- If data validation fails → investigate *which* rules broke and *why*
-- If API is slow → profile and suggest optimization
-- If DVC is stale → decide which stages to re-run
-
-A script would just report pass/fail. Ralph investigates and remediates.
+- Added `src/fraud_detection/serving/metrics.py` — Prometheus counters/histograms
+- Added `monitoring/prometheus.yml` — scrape config
+- Added `docker-compose.monitoring.yml` — full stack + Prometheus
+- Added `tests/serving/locustfile.py` — load test
 
 ## Step-by-Step
 
-### 1. Install Ralph
+### 1. Start the monitoring stack
 
 ```bash
-bash scripts/ralph/setup.sh
+docker-compose -f docker-compose.monitoring.yml up -d
 ```
 
-### 2. Run the health check (overnight)
+### 2. Verify Prometheus is scraping
+
+Open http://localhost:9090 and query:
+
+```promql
+up{job="fraud-detection-api"}
+```
+
+Should return `1`.
+
+### 3. Generate some traffic
 
 ```bash
-ralph-setup --task scripts/ralph/pipeline_health_check.md
-ralph --monitor --max-iterations 50
+for i in $(seq 1 100); do
+  curl -s -X POST http://localhost:8000/predict \
+    -H "Content-Type: application/json" \
+    -d '{"amount": '$((RANDOM % 1000))'.50, "merchant_id": "m_'$i'", "timestamp": "2026-02-08T10:30:00Z"}' &
+done
+wait
 ```
 
-### 3. Check the report in the morning
+### 4. Check metrics in Prometheus
+
+```promql
+# p95 latency
+histogram_quantile(0.95, rate(prediction_latency_seconds_bucket[5m]))
+
+# Total predictions
+predictions_total
+
+# Confidence distribution
+histogram_quantile(0.5, model_confidence_bucket)
+```
+
+### 5. Run the load test
 
 ```bash
-cat docs/reports/health_*.md
+uvx locust -f tests/serving/locustfile.py \
+  --host http://localhost:8000 \
+  --headless --users 50 --spawn-rate 5 --run-time 5m
 ```
 
-### 4. Run retraining (if recommended by health check)
+### 6. Verify results
 
-```bash
-ralph-setup --task scripts/ralph/retrain_model.md
-ralph --monitor --max-iterations 50
-```
-
-### 5. Verify results
-
-```bash
-# Check MLflow for new model versions
-open http://localhost:5000
-# Check if new model was promoted to staging
-uv run python scripts/promote_model.py --stage staging
-```
+- p95 latency < 100ms
+- 0 errors over 5 minutes
+- Metrics visible in real-time in Prometheus
 
 ## Expected Behavior
 
-- Health check runs all 5 verification steps autonomously
-- Issues are **investigated**, not just reported (e.g., "column X has 3% nulls because...")
-- Remediation is attempted when possible (reprocess data, restart service)
-- Health report is generated in `docs/reports/health_{date}.md`
-- Retraining compares new model F1 with current production
-- New model registered only if it's better
-- Fresh context per iteration (no context rot)
+- Prometheus scrapes API metrics every 15s
+- 4 metrics are exposed: `prediction_latency_seconds`, `predictions_total`, `model_confidence`, `active_requests`
+- Load test with 50 concurrent users passes (p95 < 100ms, 0 errors)
+- All metrics queryable in Prometheus UI
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `scripts/ralph/pipeline_health_check.md` | Health check + remediation task |
-| `scripts/ralph/retrain_model.md` | Retraining task |
-| `scripts/ralph/setup.sh` | Ralph installation script |
-| `docs/reports/` | Health report output directory |
+| `src/fraud_detection/serving/metrics.py` | Prometheus metric definitions |
+| `monitoring/prometheus.yml` | Prometheus scrape config |
+| `docker-compose.monitoring.yml` | Full stack + Prometheus |
+| `tests/serving/locustfile.py` | Locust load test |
 
-## Next Branch
+## That's it!
 
-→ `git checkout 12-monitoring`
+You've completed all 12 branches. Go back to `main` for the full overview:
+
+```bash
+git checkout main
+```
