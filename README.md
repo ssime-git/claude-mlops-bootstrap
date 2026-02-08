@@ -1,68 +1,83 @@
-# Branch 09: CI Pipeline
+# Branch 10: GSD Feature
 
-> **Goal**: Set up GitHub Actions for automated testing, linting, and Docker image builds.
+> **Goal**: Use GSD (Get-Shit-Done) to add a complete geo-anomaly detection feature with fresh-context agents.
 
 ## What You'll Learn
 
-- Configuring **GitHub Actions** for CI on pull requests
-- Automated quality gates: ruff, mypy, pytest
-- Docker image build and smoke test on merge to main
+- Using **GSD** for structured feature development
+- Fresh-context agent spawning (no context rot)
+- Comparing GSD vs manual development (time, quality, commits)
 
-## What Changed (vs branch 08)
+## What Changed (vs branch 09)
 
-- Added `.github/workflows/ci.yml` — lint + test on PR
-- Added `.github/workflows/docker-build.yml` — build + smoke test on merge
+- Added `.planning/` directory (GSD creates its plan here)
+- Added `docs/gsd-metrics.md` — metrics tracking template
 
 ## Step-by-Step
 
-### 1. Review the workflows
+### 1. Start GSD
 
 ```bash
-cat .github/workflows/ci.yml
-cat .github/workflows/docker-build.yml
+claude
+/gsd:new-project
 ```
 
-### 2. Test CI locally (simulate what GitHub Actions does)
+### 2. Answer the GSD interview
 
-```bash
-uvx ruff check src/
-uvx ruff format --check src/
-uvx mypy --strict src/
-uv run pytest tests/ -v --tb=short
+```
+> What: Add geographic anomaly detection
+> Requirements:
+>   - Geohashing for location clustering
+>   - Flag unusual locations per user
+>   - Integrate with MLflow tracking
+>   - <100ms latency
 ```
 
-### 3. Test Docker build locally
+GSD will create a plan in `.planning/` with tasks.
+
+### 3. Execute the plan
 
 ```bash
-docker build -t fraud-detection:test .
-docker run -d --name test-api -p 8000:8000 fraud-detection:test
-sleep 5
-curl -f http://localhost:8000/health
-docker stop test-api && docker rm test-api
+/gsd:execute-plan
 ```
 
-### 4. Push and verify
+GSD spawns fresh-context agents for each task:
+- **Task 1**: GeoHasher utility class
+- **Task 2**: GeoAnomalyDetector model
+- **Task 3**: Integration with feature pipeline
+- **Task 4**: MLflow experiment logging
+- **Task 5**: Tests (target coverage > 80%)
+
+### 4. Measure metrics
+
+Fill in `docs/gsd-metrics.md` with:
+- Time: GSD vs how long it would take manually
+- Quality: test coverage, lint errors, type errors
+- Commits: atomic (GSD) vs chaotic (manual)
+
+### 5. Review the generated code
 
 ```bash
-# Create a PR to trigger CI
-git push origin 09-ci-pipeline
-# Open PR on GitHub → watch CI run
+# Check what GSD created
+git diff --stat HEAD
+uv run pytest tests/ -v
 ```
 
 ## Expected Behavior
 
-- `ci.yml` runs on every pull request: ruff check, ruff format, mypy, pytest
-- `docker-build.yml` runs on push to main: builds image, starts container, hits /health
-- All checks pass on the current codebase
-- Failed checks block PR merge
+- GSD creates a structured plan in `.planning/`
+- Each task is executed by a fresh-context agent (no context rot)
+- Generated code passes all quality gates (ruff, mypy, pytest)
+- Commits are atomic and well-described
+- New geo-anomaly feature integrates with existing pipeline
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/ci.yml` | Lint + test on PR |
-| `.github/workflows/docker-build.yml` | Build + smoke test on merge |
+| `.planning/` | GSD planning directory (auto-generated) |
+| `docs/gsd-metrics.md` | Metrics comparison template |
 
 ## Next Branch
 
-→ `git checkout 10-gsd-feature`
+→ `git checkout 11-ralph-pipeline-check`
