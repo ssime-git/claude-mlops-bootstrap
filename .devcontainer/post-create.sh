@@ -19,9 +19,12 @@ uv sync
 echo "🔧 Installing pre-commit hooks..."
 uv run pre-commit install
 
+echo "🔧 Starting MinIO and MLflow services..."
+docker compose -f .devcontainer/docker-compose.dev.yml up -d
+
 echo "✅ Development environment ready!"
-echo "   - Claude Code: $(claude --version)"
-echo "   - GSD: $(gsd --version)"
+echo "   - Claude Code: $(claude --version 2>/dev/null || echo 'not yet installed')"
+echo "   - GSD: $(gsd --version 2>/dev/null || echo 'not yet installed')"
 echo "   - uv: $(uv --version)"
 echo "   - Python: $(python --version)"
 echo ""
