@@ -5,9 +5,10 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ..:/workspace:cached
-      - /var/run/docker.sock:/var/run/docker.sock
     command: sleep infinity
-    network_mode: service:minio
+    depends_on:
+      - minio
+      - mlflow
 
   minio:
     image: minio/minio:latest
