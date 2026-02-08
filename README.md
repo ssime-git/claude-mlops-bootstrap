@@ -17,31 +17,15 @@
 
 ## Step-by-Step
 
-### 1. Start services on the host
-
-Before opening the devcontainer, start MinIO and MLflow on the host machine:
+### 1. Open in devcontainer
 
 ```bash
-docker compose -f .devcontainer/docker-compose.dev.yml up -d
-```
-
-Verify they are running:
-
-```bash
-curl http://localhost:9003  # MinIO console
-curl http://localhost:5001  # MLflow UI
-```
-
-### 2. Open in devcontainer
-
-```bash
-# VS Code/Windsurf: Cmd/Ctrl + Shift + P → "Reopen in Container"
+# Cmd/Ctrl + Shift + P → "Reopen in Container"
 # Wait for post-create.sh to complete (~3 minutes)
+# MinIO and MLflow start automatically via docker-compose
 ```
 
-> The devcontainer connects to MinIO and MLflow running on the host via `host.docker.internal`.
-
-### 3. Authenticate Claude Code (first time only)
+### 2. Authenticate Claude Code (first time only)
 
 ```bash
 claude login
@@ -52,7 +36,7 @@ claude login
 
 > **Note**: The browser tool is built into Claude Code natively. No separate browser agent install needed.
 
-### 4. Verify the installation
+### 3. Verify the installation
 
 ```bash
 claude --version     # Claude Code 2.x
@@ -61,44 +45,18 @@ uv --version         # uv 0.x
 python --version     # Python 3.11.x
 ```
 
-### 5. Verify services from inside the devcontainer
-
-The services run on the host. From inside the devcontainer, access them via `host.docker.internal`:
+### 4. Verify services
 
 ```bash
-# MinIO API
-curl http://host.docker.internal:9002
-# MinIO console (open in browser on host: http://localhost:9003)
-# Login: minioadmin / minioadmin
-
-# MLflow UI (open in browser on host: http://localhost:5001)
-curl http://host.docker.internal:5001
+curl http://minio:9000       # MinIO API
+curl http://mlflow:5000      # MLflow UI
 ```
 
-Test MinIO with Python:
+Open in browser:
+- MinIO console: http://localhost:9003 (login: minioadmin / minioadmin)
+- MLflow UI: http://localhost:5001
 
-```python
-import boto3
-
-s3 = boto3.client(
-    "s3",
-    endpoint_url="http://host.docker.internal:9002",
-    aws_access_key_id="minioadmin",
-    aws_secret_access_key="minioadmin",
-)
-s3.list_buckets()  # Should return empty list
-```
-
-Test MLflow:
-
-```python
-import mlflow
-
-mlflow.set_tracking_uri("http://host.docker.internal:5001")
-mlflow.search_experiments()  # Should return default experiment
-```
-
-### 6. Test Claude Code
+### 5. Test Claude Code
 
 ```bash
 claude --permission-mode plan
@@ -107,31 +65,21 @@ claude --permission-mode plan
 > Read the project structure and summarize what you see
 ```
 
-### 7. Test GSD
+### 6. Test GSD
 
 ```bash
 claude
 /gsd:help
 ```
 
-### 8. Stop services (when done)
-
-On the host:
-
-```bash
-docker compose -f .devcontainer/docker-compose.dev.yml down
-```
-
 ## Expected Behavior
 
-- Services (MinIO, MLflow) start on the host without port conflicts
-- devcontainer starts without errors
+- devcontainer starts with MinIO + MLflow automatically
 - Claude Code is installed and authenticated (`claude login`)
 - GSD is available globally
-- MinIO reachable from devcontainer at `host.docker.internal:9002` (API) / `:9003` (console)
-- MLflow reachable from devcontainer at `host.docker.internal:5001`
-- MinIO console accessible in browser at http://localhost:9003
-- MLflow UI accessible in browser at http://localhost:5001
+- MinIO console accessible at http://localhost:9003
+- MLflow UI accessible at http://localhost:5001
+- From inside the container, services reachable at `minio:9000` and `mlflow:5000`
 - Python 3.11 + uv are functional
 - `claude --permission-mode plan` opens Claude in plan mode
 
