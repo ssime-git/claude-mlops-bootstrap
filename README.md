@@ -1,71 +1,69 @@
-# Branch 07: DVC Pipeline
+# Branch 08: Model Registry
 
-> **Goal**: Create a reproducible DVC pipeline with containerized stages for data processing and training.
+> **Goal**: Set up MLflow Model Registry with staging/production stages and a rollback strategy.
 
 ## What You'll Learn
 
-- Defining a **DVC pipeline** (`dvc.yaml`) with stages, deps, and outputs
-- Using **params.yaml** for config-driven pipelines
-- Building separate Docker images for each pipeline stage
-- Selective re-execution when params change
+- Registering models in **MLflow Model Registry**
+- Promoting models through stages (Staging → Production)
+- Implementing a **rollback strategy** (revert to previous version)
+- CLI tooling for model lifecycle management
 
-## What Changed (vs branch 06)
+## What Changed (vs branch 07)
 
-- Added `dvc.yaml` — pipeline definition (process → train)
-- Added `params.yaml` — shared pipeline parameters
-- Added `docker/Dockerfile.process` and `docker/Dockerfile.train`
+- Added `src/fraud_detection/registry.py` — register, promote, rollback, load
+- Added `scripts/promote_model.py` — CLI for model promotion
 
 ## Step-by-Step
 
-### 1. Review the pipeline
+### 1. Register the best model
 
 ```bash
-cat dvc.yaml
-dvc dag
+uv run python scripts/promote_model.py --stage staging
 ```
 
-Expected DAG:
-```
-process → train
-```
-
-### 2. Run the full pipeline
+### 2. Test the staging model
 
 ```bash
-dvc repro
+# Verify the model works in staging
+curl http://localhost:8000/health
 ```
 
-### 3. Change a parameter and re-run
+### 3. Promote to production
 
 ```bash
-# Edit params.yaml: change max_depth from 6 to 8
-dvc repro
-# Only the 'train' stage should re-run (process is cached)
+uv run python scripts/promote_model.py --stage production
 ```
 
-### 4. Check pipeline status
+### 4. Simulate a rollback
 
 ```bash
-dvc status
+# If something goes wrong:
+uv run python scripts/promote_model.py --rollback
 ```
+
+### 5. Verify in MLflow UI
+
+Open http://localhost:5000 → Models tab:
+- See registered model "FraudDetector"
+- See version history with stage transitions
+- Verify rollback moved previous version to Production
 
 ## Expected Behavior
 
-- `dvc repro` executes both stages (process → train)
-- `dvc dag` shows the dependency graph
-- Changing `params.yaml` triggers selective re-execution
-- Outputs are tracked: `data/processed/`, `models/`, `metrics.json`
-- `dvc status` shows clean state after successful run
+- Model is registered in MLflow Registry
+- Promotion from Staging → Production works
+- Rollback demotes current version to Archived, promotes N-1 to Production
+- API automatically picks up the new production model
+- All transitions are logged with structlog
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `dvc.yaml` | Pipeline stages definition |
-| `params.yaml` | Shared hyperparameters |
-| `docker/Dockerfile.process` | Container for data processing |
-| `docker/Dockerfile.train` | Container for model training |
+| `src/fraud_detection/registry.py` | Register, promote, rollback, load |
+| `scripts/promote_model.py` | CLI for model lifecycle |
 
 ## Next Branch
 
-→ `git checkout 08-model-registry`
+→ `git checkout 09-ci-pipeline`
