@@ -1,11 +1,8 @@
 {
   "name": "MLOps Fraud Detection - Claude Code Demo",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "dockerComposeFile": "docker-compose.dev.yml",
+  "service": "devcontainer",
   "workspaceFolder": "/workspace",
-  "remoteUser": "vscode",
 
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
