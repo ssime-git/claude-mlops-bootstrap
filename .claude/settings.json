@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write(*.py)|Edit(*.py)|MultiEdit(*.py)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx ruff check --select E,F,I,N,UP,RUF --fix $file",
+            "displayName": "Ruff check"
+          },
+          {
+            "type": "command",
+            "command": "uvx ruff format $file",
+            "displayName": "Ruff format"
+          },
+          {
+            "type": "command",
+            "command": "uvx mypy --strict $file",
+            "displayName": "MyPy strict",
+            "continueOnError": false
+          }
+        ]
+      },
+      {
+        "matcher": "Write(pyproject.toml)|Edit(pyproject.toml)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx --from=toml-sort toml-sort $file --in-place",
+            "displayName": "Sort pyproject.toml"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(*.yaml)|Edit(*.yaml)|Write(*.yml)|Edit(*.yml)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx yamllint -d relaxed $file",
+            "displayName": "YAML lint",
+            "continueOnError": true
+          }
+        ]
+      }
+    ]
+  }
+}

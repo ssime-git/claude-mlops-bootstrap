@@ -1,86 +1,101 @@
-# Branch 01: Research Skills
+# Branch 02: Claude Code Configuration
 
-> **Goal**: Use Claude Code's browser tool to research up-to-date documentation before creating MLOps skills.
+> **Goal**: Configure Claude Code with CLAUDE.md, automated hooks, MLOps skills, and a custom slash command.
 
 ## What You'll Learn
 
-- Creating a Claude Code **skill** (`.claude/skills/`)
-- Using the **browser tool** to research latest APIs
-- Building a research-first workflow before coding integrations
+- Writing a **CLAUDE.md** project constitution
+- Configuring **hooks** for automatic quality gates (ruff, mypy) on every file write
+- Creating domain-specific **skills** (MLflow, DVC, FastAPI, Great Expectations)
+- Adding a **custom slash command** (`/quality-check`)
+- Setting up **pre-commit** hooks
 
-## What Changed (vs branch 00)
+## What Changed (vs branch 01)
 
-- Added `.claude/skills/web-research/SKILL.md`
-- Added `docs/research/` directory for research outputs
+- Added `CLAUDE.md` — project constitution
+- Added `.claude/settings.json` — hooks configuration
+- Added 4 MLOps skills in `.claude/skills/`
+- Added `.claude/commands/quality-check.md` — slash command
+- Added `.pre-commit-config.yaml`
 
 ## Step-by-Step
 
-### 1. Launch Claude Code
+### 1. Install dev dependencies
+
+```bash
+uv add --dev ruff mypy pytest pytest-cov pre-commit
+```
+
+### 2. Read the CLAUDE.md
+
+```bash
+cat CLAUDE.md
+```
+
+This is the "constitution" that guides Claude's behavior for this project.
+
+### 3. Test the hooks
 
 ```bash
 claude
+
+# Ask Claude to create a simple file:
+> Create a simple validator: src/fraud_detection/validators.py
+> Function: validate_amount(amount: float) -> bool
+> Returns True if 0 < amount < 1000000
 ```
 
-### 2. Use the web-research skill
+**Watch the hooks fire automatically:**
+- ✅ Ruff check (linting)
+- ✅ Ruff format (code style)
+- ✅ MyPy strict (type checking)
 
-Ask Claude to research the latest APIs before creating MLOps skills:
-
-```
-> I need to research the latest APIs before creating MLOps skills.
-> Use the web-research skill to:
->
-> 1. Check MLflow 2.x tracking API (mlflow.org/docs)
->    - Focus on: mlflow.log_params, mlflow.log_metrics, mlflow.log_model
->    - Check for any breaking changes
->    - Save to docs/research/mlflow-latest.md
->
-> 2. Check DVC 3.x commands (dvc.org/doc)
->    - Focus on: dvc add, dvc remote add, dvc pipeline
->    - Verify dvc.yaml syntax
->    - Save to docs/research/dvc-latest.md
->
-> 3. Check Great Expectations 1.x (docs.greatexpectations.io)
->    - Focus on: expectation suites, data validation
->    - Check for API changes
->    - Save to docs/research/ge-latest.md
->
-> 4. Check FastAPI latest (fastapi.tiangolo.com)
->    - Focus on: async patterns, Pydantic v2
->    - ML model serving patterns
->    - Save to docs/research/fastapi-latest.md
->
-> 5. Search for fraud detection datasets (kaggle.com)
->    - Open source, >50k transactions
->    - Must have: amount, merchant, timestamp, label
->    - Save URLs to docs/research/datasets.md
-```
-
-### 3. Verify the results
+### 4. Test a skill
 
 ```bash
-ls -la docs/research/
-cat docs/research/mlflow-latest.md
+claude
+
+> Using the mlflow-tracking skill (check docs/research/mlflow-latest.md first),
+> create src/fraud_detection/tracking.py with a setup_experiment() function
+```
+
+Claude should automatically reference the skill pattern and research docs.
+
+### 5. Test the slash command
+
+```bash
+claude
+
+/quality-check
+```
+
+### 6. Test pre-commit
+
+```bash
+uv run pre-commit run --all-files
 ```
 
 ## Expected Behavior
 
-- Claude uses the browser tool to navigate to official docs
-- 5 research files are generated in `docs/research/`
-- Each file contains current API syntax and examples
-- At least 1 open-source fraud detection dataset is identified
-- Research files follow the output format defined in the skill
+- When Claude writes any `.py` file, hooks run automatically (ruff + mypy)
+- Generated code has type hints, Google-style docstrings, proper imports
+- Skills are picked up automatically when relevant topics are mentioned
+- `/quality-check` runs all quality gates and reports results
+- Pre-commit hooks catch issues before committing
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `.claude/skills/web-research/SKILL.md` | Skill definition for doc research |
-| `docs/research/mlflow-latest.md` | MLflow 2.x API findings |
-| `docs/research/dvc-latest.md` | DVC 3.x command findings |
-| `docs/research/ge-latest.md` | Great Expectations 1.x findings |
-| `docs/research/fastapi-latest.md` | FastAPI latest findings |
-| `docs/research/datasets.md` | Fraud detection dataset URLs |
+| `CLAUDE.md` | Project constitution for Claude Code |
+| `.claude/settings.json` | Hooks configuration (PostToolUse) |
+| `.claude/skills/mlflow-tracking/SKILL.md` | MLflow tracking patterns |
+| `.claude/skills/dvc-versioning/SKILL.md` | DVC versioning patterns |
+| `.claude/skills/fastapi-serving/SKILL.md` | FastAPI serving patterns |
+| `.claude/skills/great-expectations/SKILL.md` | Data validation patterns |
+| `.claude/commands/quality-check.md` | `/quality-check` slash command |
+| `.pre-commit-config.yaml` | Pre-commit hooks config |
 
 ## Next Branch
 
-→ `git checkout 02-claude-config`
+→ `git checkout 03-data-pipeline`
