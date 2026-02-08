@@ -1,31 +1,55 @@
 # Branch 00: Project Setup
 
-> **Goal**: Set up the project structure, devcontainer with Claude Code and GSD pre-installed, and local services (MinIO + MLflow).
+> **Goal**: Set up the project structure, install Claude Code and GSD, and start local services (MinIO + MLflow).
 
 ## What You'll Learn
 
 - How to structure an MLOps project with `uv`
-- Setting up a devcontainer with Claude Code ready to use
-- Authenticating Claude Code inside a container
+- Installing and configuring Claude Code
 - Running MinIO (S3-compatible) and MLflow locally via Docker Compose
 
 ## Prerequisites
 
-- Docker Desktop running
-- VS Code with the Dev Containers extension
+- Docker installed
+- Python 3.11+ and [uv](https://docs.astral.sh/uv/)
+- Node.js 18+ (for Claude Code and GSD)
 - An Anthropic account (Pro, Team, or Enterprise)
 
 ## Step-by-Step
 
-### 1. Open in devcontainer
+### 1. Install tools
 
 ```bash
-# Cmd/Ctrl + Shift + P → "Reopen in Container"
-# Wait for post-create.sh to complete (~3 minutes)
-# MinIO and MLflow start automatically via docker-compose
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install Claude Code
+npm install -g @anthropic-ai/claude-code
+
+# Install GSD
+npm install -g get-shit-done-cc
 ```
 
-### 2. Authenticate Claude Code (first time only)
+### 2. Set up the project
+
+```bash
+git clone https://github.com/ssime-git/claude-mlops-bootstrap.git
+cd claude-mlops-bootstrap
+git checkout 00-project-setup
+uv sync
+```
+
+### 3. Start services (MinIO + MLflow)
+
+```bash
+docker compose -f docker-compose.claude.yml up -d minio mlflow
+```
+
+Verify:
+- MinIO console: http://localhost:9003 (login: minioadmin / minioadmin)
+- MLflow UI: http://localhost:5001
+
+### 4. Authenticate Claude Code (first time only)
 
 ```bash
 claude login
@@ -34,9 +58,7 @@ claude login
 # → Token is persisted in ~/.claude/ for future sessions
 ```
 
-> **Note**: The browser tool is built into Claude Code natively. No separate browser agent install needed.
-
-### 3. Verify the installation
+### 5. Verify the installation
 
 ```bash
 claude --version     # Claude Code 2.x
@@ -45,18 +67,7 @@ uv --version         # uv 0.x
 python --version     # Python 3.11.x
 ```
 
-### 4. Verify services
-
-```bash
-curl http://minio:9000       # MinIO API
-curl http://mlflow:5000      # MLflow UI
-```
-
-Open in browser:
-- MinIO console: http://localhost:9003 (login: minioadmin / minioadmin)
-- MLflow UI: http://localhost:5001
-
-### 5. Test Claude Code
+### 6. Test Claude Code
 
 ```bash
 claude --permission-mode plan
@@ -65,21 +76,39 @@ claude --permission-mode plan
 > Read the project structure and summarize what you see
 ```
 
-### 6. Test GSD
+### 7. Test GSD
 
 ```bash
 claude
 /gsd:help
 ```
 
+### 8. Stop services (when done)
+
+```bash
+docker compose -f docker-compose.claude.yml down
+```
+
+## Alternative: Run Claude Code in a container
+
+If you prefer a containerized setup (no local install needed):
+
+```bash
+# Set your API key
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# Run Claude Code in a container with MinIO + MLflow
+docker compose -f docker-compose.claude.yml run --rm claude
+```
+
+This uses the official Anthropic Claude Code image (`Dockerfile.claude`).
+
 ## Expected Behavior
 
-- devcontainer starts with MinIO + MLflow automatically
 - Claude Code is installed and authenticated (`claude login`)
 - GSD is available globally
 - MinIO console accessible at http://localhost:9003
 - MLflow UI accessible at http://localhost:5001
-- From inside the container, services reachable at `minio:9000` and `mlflow:5000`
 - Python 3.11 + uv are functional
 - `claude --permission-mode plan` opens Claude in plan mode
 
@@ -91,11 +120,8 @@ fraud-detection/
 ├── .gitignore
 ├── pyproject.toml
 ├── .python-version
-├── .devcontainer/
-│   ├── devcontainer.json
-│   ├── Dockerfile
-│   ├── docker-compose.dev.yml
-│   └── post-create.sh
+├── docker-compose.claude.yml
+├── Dockerfile.claude
 ├── docs/
 │   ├── CONTRIBUTING.md
 │   ├── ARCHITECTURE.md
