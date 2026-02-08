@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /workspace
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen
+
+COPY src/ src/
+COPY config/ config/
+
+CMD ["uv", "run", "python", "-m", "fraud_detection.data.processor"]

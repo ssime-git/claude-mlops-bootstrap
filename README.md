@@ -1,72 +1,71 @@
-# Branch 06: Dockerize All
+# Branch 07: DVC Pipeline
 
-> **Goal**: Containerize the full stack (API + MinIO + MLflow) with Docker Compose.
+> **Goal**: Create a reproducible DVC pipeline with containerized stages for data processing and training.
 
 ## What You'll Learn
 
-- Writing a production **Dockerfile** with uv
-- Composing services with **Docker Compose** (API, MinIO, MLflow)
-- Using `.dockerignore` to keep images lean
+- Defining a **DVC pipeline** (`dvc.yaml`) with stages, deps, and outputs
+- Using **params.yaml** for config-driven pipelines
+- Building separate Docker images for each pipeline stage
+- Selective re-execution when params change
 
-## What Changed (vs branch 05)
+## What Changed (vs branch 06)
 
-- Added `Dockerfile` — production image with multi-stage uv install
-- Added `docker-compose.yml` — full production stack
-- Added `.dockerignore`
+- Added `dvc.yaml` — pipeline definition (process → train)
+- Added `params.yaml` — shared pipeline parameters
+- Added `docker/Dockerfile.process` and `docker/Dockerfile.train`
 
 ## Step-by-Step
 
-### 1. Build the image
+### 1. Review the pipeline
 
 ```bash
-docker-compose build
+cat dvc.yaml
+dvc dag
 ```
 
-### 2. Start the full stack
-
-```bash
-docker-compose up -d
+Expected DAG:
+```
+process → train
 ```
 
-### 3. Test the API in container
+### 2. Run the full pipeline
 
 ```bash
-curl http://localhost:8000/health
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"amount": 42.0, "merchant_id": "m_1", "timestamp": "2026-02-08T12:00:00Z"}'
+dvc repro
 ```
 
-### 4. Check services
+### 3. Change a parameter and re-run
 
 ```bash
-curl http://localhost:9001  # MinIO console
-curl http://localhost:5000  # MLflow UI
+# Edit params.yaml: change max_depth from 6 to 8
+dvc repro
+# Only the 'train' stage should re-run (process is cached)
 ```
 
-### 5. View logs
+### 4. Check pipeline status
 
 ```bash
-docker-compose logs -f api
+dvc status
 ```
 
 ## Expected Behavior
 
-- `docker-compose build` completes without errors
-- API is accessible at http://localhost:8000
-- MinIO console at http://localhost:9001
-- MLflow UI at http://localhost:5000
-- `/predict` endpoint works end-to-end through containers
-- Image size is reasonable (< 500MB)
+- `dvc repro` executes both stages (process → train)
+- `dvc dag` shows the dependency graph
+- Changing `params.yaml` triggers selective re-execution
+- Outputs are tracked: `data/processed/`, `models/`, `metrics.json`
+- `dvc status` shows clean state after successful run
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `Dockerfile` | Production image (python:3.11-slim + uv) |
-| `docker-compose.yml` | Full stack: API + MinIO + MLflow |
-| `.dockerignore` | Exclude dev files from image |
+| `dvc.yaml` | Pipeline stages definition |
+| `params.yaml` | Shared hyperparameters |
+| `docker/Dockerfile.process` | Container for data processing |
+| `docker/Dockerfile.train` | Container for model training |
 
 ## Next Branch
 
-→ `git checkout 07-dvc-pipeline`
+→ `git checkout 08-model-registry`

@@ -1,0 +1,18 @@
+stages:
+  process:
+    cmd: docker run --rm -v $(pwd):/workspace fraud-process
+    deps:
+      - data/raw/transactions.csv
+    outs:
+      - data/processed/transactions_clean.parquet
+
+  train:
+    cmd: docker run --rm -v $(pwd):/workspace fraud-train
+    deps:
+      - data/processed/transactions_clean.parquet
+    params:
+      - xgboost
+    metrics:
+      - metrics.json
+    outs:
+      - models/fraud_model.pkl
