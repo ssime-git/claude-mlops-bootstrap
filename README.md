@@ -1,107 +1,86 @@
-# Branch 00: Project Setup
+# Branch 01: Research Skills
 
-> **Goal**: Set up the project structure, devcontainer with Claude Code and GSD pre-installed, and local services (MinIO + MLflow).
+> **Goal**: Use Claude Code's browser tool to research up-to-date documentation before creating MLOps skills.
 
 ## What You'll Learn
 
-- How to structure an MLOps project with `uv`
-- Setting up a devcontainer with Claude Code ready to use
-- Authenticating Claude Code inside a container
-- Running MinIO (S3-compatible) and MLflow locally via Docker Compose
+- Creating a Claude Code **skill** (`.claude/skills/`)
+- Using the **browser tool** to research latest APIs
+- Building a research-first workflow before coding integrations
 
-## Prerequisites
+## What Changed (vs branch 00)
 
-- Docker Desktop running
-- VS Code with the Dev Containers extension
-- An Anthropic account (Pro, Team, or Enterprise)
+- Added `.claude/skills/web-research/SKILL.md`
+- Added `docs/research/` directory for research outputs
 
 ## Step-by-Step
 
-### 1. Open in devcontainer
-
-```bash
-# VS Code: Cmd/Ctrl + Shift + P → "Reopen in Container"
-# Wait for post-create.sh to complete (~3 minutes)
-```
-
-### 2. Authenticate Claude Code (first time only)
-
-```bash
-claude login
-# → Opens a browser link for OAuth
-# → Requires an Anthropic Pro, Team, or Enterprise account
-# → Token is persisted in ~/.claude/ for future sessions
-```
-
-> **Note**: The browser tool is built into Claude Code natively. No separate browser agent install needed.
-
-### 3. Verify the installation
-
-```bash
-claude --version     # Claude Code 2.x
-gsd --version        # get-shit-done-cc
-uv --version         # uv 0.x
-python --version     # Python 3.11.x
-```
-
-### 4. Verify services
-
-```bash
-curl http://localhost:9001  # MinIO console
-curl http://localhost:5000  # MLflow UI
-```
-
-### 5. Test Claude Code
-
-```bash
-claude --permission-mode plan
-
-# Inside Claude:
-> Read the project structure and summarize what you see
-```
-
-### 6. Test GSD
+### 1. Launch Claude Code
 
 ```bash
 claude
-/gsd:help
+```
+
+### 2. Use the web-research skill
+
+Ask Claude to research the latest APIs before creating MLOps skills:
+
+```
+> I need to research the latest APIs before creating MLOps skills.
+> Use the web-research skill to:
+>
+> 1. Check MLflow 2.x tracking API (mlflow.org/docs)
+>    - Focus on: mlflow.log_params, mlflow.log_metrics, mlflow.log_model
+>    - Check for any breaking changes
+>    - Save to docs/research/mlflow-latest.md
+>
+> 2. Check DVC 3.x commands (dvc.org/doc)
+>    - Focus on: dvc add, dvc remote add, dvc pipeline
+>    - Verify dvc.yaml syntax
+>    - Save to docs/research/dvc-latest.md
+>
+> 3. Check Great Expectations 1.x (docs.greatexpectations.io)
+>    - Focus on: expectation suites, data validation
+>    - Check for API changes
+>    - Save to docs/research/ge-latest.md
+>
+> 4. Check FastAPI latest (fastapi.tiangolo.com)
+>    - Focus on: async patterns, Pydantic v2
+>    - ML model serving patterns
+>    - Save to docs/research/fastapi-latest.md
+>
+> 5. Search for fraud detection datasets (kaggle.com)
+>    - Open source, >50k transactions
+>    - Must have: amount, merchant, timestamp, label
+>    - Save URLs to docs/research/datasets.md
+```
+
+### 3. Verify the results
+
+```bash
+ls -la docs/research/
+cat docs/research/mlflow-latest.md
 ```
 
 ## Expected Behavior
 
-- devcontainer starts without errors
-- Claude Code is installed and authenticated (`claude login`)
-- GSD is available globally
-- MinIO console accessible on http://localhost:9001
-- MLflow UI accessible on http://localhost:5000
-- Python 3.11 + uv are functional
-- `claude --permission-mode plan` opens Claude in plan mode
+- Claude uses the browser tool to navigate to official docs
+- 5 research files are generated in `docs/research/`
+- Each file contains current API syntax and examples
+- At least 1 open-source fraud detection dataset is identified
+- Research files follow the output format defined in the skill
 
-## Project Structure
+## Key Files
 
-```
-fraud-detection/
-├── README.md
-├── .gitignore
-├── pyproject.toml
-├── .python-version
-├── .devcontainer/
-│   ├── devcontainer.json
-│   ├── Dockerfile
-│   ├── docker-compose.dev.yml
-│   └── post-create.sh
-├── docs/
-│   ├── CONTRIBUTING.md
-│   ├── ARCHITECTURE.md
-│   └── decisions/
-│       └── 001-tech-stack.md
-├── src/
-│   └── fraud_detection/
-│       └── __init__.py
-└── tests/
-    └── __init__.py
-```
+| File | Purpose |
+|------|---------|
+| `.claude/skills/web-research/SKILL.md` | Skill definition for doc research |
+| `docs/research/mlflow-latest.md` | MLflow 2.x API findings |
+| `docs/research/dvc-latest.md` | DVC 3.x command findings |
+| `docs/research/ge-latest.md` | Great Expectations 1.x findings |
+| `docs/research/fastapi-latest.md` | FastAPI latest findings |
+| `docs/research/datasets.md` | Fraud detection dataset URLs |
 
 ## Next Branch
 
-→ `git checkout 01-research-skills`
+→ `git checkout 02-claude-config`
